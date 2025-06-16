@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Home</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans leading-normal tracking-normal">
+
+  <div class="container mx-auto p-6">
+    <h1 class="text-3xl font-bold text-center text-indigo-700 mb-6">OpenAI × Spring Boot</h1>
+
+    <!-- Tabs -->
+    <div class="mb-4 flex justify-center">
+      <button onclick="showTab('questionTab')" class="tab-btn bg-indigo-500 text-white px-4 py-2 rounded-l">質問</button>
+      <button onclick="showTab('recipeTab')" class="tab-btn bg-gray-200 text-gray-700 px-4 py-2 rounded-r">レシピ</button>
+    </div>
+
+    <!-- Question Form Tab -->
+    <div id="questionTab" class="tab-content bg-white p-6 rounded shadow-md">
+      <h2 class="text-xl font-semibold mb-4">AIに何でも聞いてみましょう</h2>
+      <form id="questionForm" class="space-y-4">
+        <label for="question" class="block text-gray-700">質問：</label>
+        <textarea id="question" name="question" rows="4" class="w-full border border-gray-300 rounded p-2" required></textarea>
+        <button type="submit" id="questionSubmitBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded">
+          送信
+        </button>
+      </form>
+      <div class="mt-6">
+        <h3 class="font-bold">回答:</h3>
+        <pre id="answer" class="w-full whitespace-pre-wrap break-words bg-gray-100 p-3 border border-gray-300 rounded mt-2"></pre>
+      </div>
+    </div>
+
+    <!-- Recipe Form Tab -->
+    <div id="recipeTab" class="tab-content hidden bg-white p-6 rounded shadow-md">
+      <h2 class="text-xl font-semibold mb-4">AIでレシピ作成</h2>
+      <form id="recipeForm" class="space-y-4">
+        <label for="ingredients" class="block text-gray-700">材料：</label>
+        <textarea id="ingredients" name="ingredients" rows="4" class="w-full border border-gray-300 rounded p-2" required></textarea>
+        <button type="submit" id="recipeSubmitBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
+          レシピ生成
+        </button>
+      </form>
+      <div class="mt-6">
+        <h3 class="font-bold">生成されたレシピ:</h3>
+        <pre id="recipeResult" class="w-full whitespace-pre-wrap break-words bg-gray-100 p-3 border border-gray-300 rounded mt-2"></pre>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function showTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
+      document.getElementById(tabId).classList.remove('hidden');
+
+      const buttons = document.querySelectorAll('.tab-btn');
+      buttons.forEach(btn => btn.classList.remove('bg-indigo-500', 'text-white', 'bg-gray-200', 'text-gray-700'));
+
+      if (tabId === 'questionTab') {
+        buttons[0].classList.add('bg-indigo-500', 'text-white');
+        buttons[1].classList.add('bg-gray-200', 'text-gray-700');
+      } else {
+        buttons[1].classList.add('bg-indigo-500', 'text-white');
+        buttons[0].classList.add('bg-gray-200', 'text-gray-700');
+      }
+    }
+
+    document.getElementById("questionForm").addEventListener("submit", async function(e) {
+      e.preventDefault();
+      const questionText = document.getElementById("question").value;
+      const submitBtn = document.getElementById("questionSubmitBtn");
+      const originalText = submitBtn.textContent;
+
+      // ローディング状態
+      submitBtn.textContent = "読み込み中...";
+      submitBtn.disabled = true;
+
+      try {
+        const response = await fetch("/api/openai", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ question: questionText })
+        });
+
+        const result = await response.json();
+        document.getElementById("answer").textContent = result.answer;
+      } catch (error) {
+        document.getElementById("answer").textContent = "エラーが発生しました";
+      } finally {
+        submitBtn.textContent = originalText;
+        submitBtn.disabled = false;
+      }
+    });
+
+    document.getElementById("recipeForm").addEventListener("submit", async function(e) {
+      e.preventDefault();
+      const ingredients = document.getElementById("ingredients").value;
+      const submitBtn = document.getElementById("recipeSubmitBtn");
+      const originalText = submitBtn.textContent;
+
+      // ローディング状態
+      submitBtn.textContent = "生成中...";
+      submitBtn.disabled = true;
+
+      try {
+        const response = await fetch("/api/recipe", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(ingredients)
+        });
+
+        const result = await response.text();
+        document.getElementById("recipeResult").textContent = result;
+      } catch (error) {
+        document.getElementById("recipeResult").textContent = "エラーが発生しました";
+      } finally {
+        submitBtn.textContent = originalText;
+        submitBtn.disabled = false;
+      }
+    });
+
+    // デフォルトで質問タブを表示
+    showTab('questionTab');
+  </script>
+
+</body>
+</html>
